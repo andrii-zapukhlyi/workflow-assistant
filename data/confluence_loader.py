@@ -27,10 +27,11 @@ def extract_text_and_images(soup, page_id):
 
     def recurse(elem):
         for child in elem.children:
-            if child.name in ['h1','h2','h3','h4']:
+            if child.name in ['h1','h2','h3','h4', 'h5', 'h6']:
                 text = child.get_text(strip=True)
                 if text:
-                    texts.append(f"\n{text}\n")
+                    heading = int(child.name[1])
+                    texts.append("\n" + "#" * heading + f" {text}\n")
 
             elif child.name == 'p':
                 text = format_inline(child)
@@ -52,7 +53,7 @@ def extract_text_and_images(soup, page_id):
             elif child.name == 'table':
                 table_text = extract_table(child)
                 if table_text:
-                    texts.append(f'[Table]\n{table_text}\n[End of Table]\n')
+                    texts.append(f"{table_text}\n")
 
             elif child.name == 'ac:structured-macro' and child.get('ac:name') == 'code':
                 code_text = extract_code_block(child)
@@ -129,10 +130,15 @@ def extract_text_and_images(soup, page_id):
 
     def extract_table(table_tag):
         rows = []
-        for tr in table_tag.find_all('tr'):
+        header = table_tag.find('tr')
+        if header:
+            headers = [th.get_text(strip=True) for th in header.find_all(['th','td'])]
+            rows.append("| " + " | ".join(headers) + " |")
+            rows.append("|" + "|".join(['---']*len(headers)) + "|")
+        for tr in table_tag.find_all('tr')[1:]:
             cells = [td.get_text(strip=True) for td in tr.find_all(['td','th'])]
             if cells:
-                rows.append("\t".join(cells))
+                rows.append("| " + " | ".join(cells) + " |")
         return "\n".join(rows)
 
     def extract_code_block(tag):
@@ -140,11 +146,11 @@ def extract_text_and_images(soup, page_id):
         code_tag = tag.find('ac:plain-text-body')
         if code_tag:
             code = code_tag.get_text()
-            lang = lang_tag.get_text(strip=True) if lang_tag else ''
+            lang = lang_tag.get_text(strip=True).lower() if lang_tag else ''
             if lang:
-                return f"```[Code language: {lang.upper()}]\n{code}\n```"
+                return f"```{lang}\n{code}\n```"
             else:
-                return f"```\n{code}\n```"
+                return f"\n```\n{code}\n```"
         return None
 
     recurse(soup)
