@@ -1,6 +1,7 @@
 from db.crud import get_employee_by_email
 from db.db_auth import SessionLocal
-from rag.confluence_loader import get_pages_from_space
+from rag.confluence_loader import get_available_pages
+from rag.embedder import chunk_and_embed_documents
 
 db = SessionLocal()
 
@@ -12,5 +13,6 @@ except ValueError as e:
     print(e)
     exit(1)
 
-available_pages = get_pages_from_space(employee.department)
-print([page['title'] for page in available_pages])
+docs = get_available_pages(space_key=employee.department)
+embedded_docs = chunk_and_embed_documents(docs)
+print(embedded_docs)

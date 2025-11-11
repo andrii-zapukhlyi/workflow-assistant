@@ -121,6 +121,10 @@ def extract_text_and_images(soup, page_id):
             short = emo.get('ac:emoji-shortname', '').strip(':')
             if short:
                 s = s.replace(str(emo), f":{short}:")
+        for link in tag.find_all('a', href=True):
+            link_text = link.get_text(strip=True)
+            link_url = link['href']
+            s = s.replace(str(link), f"[{link_text}: {link_url}]")
         for link in tag.find_all('ac:link'):
             user_tag = link.find('ri:user')
             if user_tag:
@@ -177,3 +181,9 @@ def get_content_of_page(page_id):
     else:
         print("Error fetching content:", response.status_code, response.text)
         return None
+
+def get_available_pages(space_key):
+    page_titles = [page["title"] for page in get_pages_from_space(space_key)]
+    page_text = [content["text"] for content in [get_content_of_page(page["id"]) for page in get_pages_from_space(space_key)] if content]
+    available_pages = [{"title": title, "text": text} for title, text in zip(page_titles, page_text)]
+    return available_pages
