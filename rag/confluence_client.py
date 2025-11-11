@@ -22,8 +22,8 @@ def get_pages_from_space(space_key):
     if response.status_code == 200:
         result = response.json().get("results", [])
         pages = [{"id": page["id"], "title": page["title"]} for page in result]
-        public_pages = get_public_pages()
-        pages += public_pages
+        #public_pages = get_public_pages()
+        #pages += public_pages
         return [page for page in pages if page['title'] != "Main Page"]
     else:
         print("Error fetching pages:", response.status_code, response.text)
@@ -187,3 +187,22 @@ def get_available_pages(space_key):
     page_text = [content["text"] for content in [get_content_of_page(page["id"]) for page in get_pages_from_space(space_key)] if content]
     available_pages = [{"title": title, "text": text} for title, text in zip(page_titles, page_text)]
     return available_pages
+
+def get_all_spaces():
+    url = f"https://{CONFLUENCE_DOMAIN}/wiki/rest/api/space"
+    auth = HTTPBasicAuth(CONFLUENCE_USERNAME, CONFLUENCE_API_TOKEN)
+    response = requests.get(url, auth=auth)
+    if response.status_code == 200:
+        result = response.json().get("results", [])
+        spaces = [{"key": space["key"], "name": space["name"]} for space in result]
+        return spaces
+    else:
+        print("Error fetching spaces:", response.status_code, response.text)
+        return []
+
+def get_all_pages():
+    pages = []
+    spaces = get_all_spaces()
+    for space in spaces:
+        pages.extend(get_available_pages(space["key"]))
+    return pages

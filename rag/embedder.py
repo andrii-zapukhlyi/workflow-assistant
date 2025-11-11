@@ -29,23 +29,20 @@ def embed_text(texts, locally = True):
         return [e[0] if isinstance(e, list) and isinstance(e[0], list) else e for e in embeddings]
 
 def chunk_and_embed_documents(documents):
-    chunked_pages = []
+    chunks = []
+    embeddings = []
+    metadata = []
 
     for doc in documents:
-        chunks = chunk_text(doc["text"])
-        embeddings = embed_text(chunks, locally=True)
+        chunked_text = chunk_text(doc["text"])
+        embedded_text = embed_text(chunked_text, locally=True)
 
-        page_context = []
-        for idx, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-            page_context.append({
-                "chunk_text": chunk,
-                "embedding": embedding,
+        for idx, (chunk, embedding) in enumerate(zip(chunked_text, embedded_text)):
+            chunks.append(chunk)
+            embeddings.append(embedding)
+            metadata.append({
+                "page_title": doc["title"],
                 "chunk_index": idx
             })
 
-        chunked_pages.append({
-            "page_title": doc["title"],
-            "page_context": page_context
-        })
-
-    return chunked_pages
+    return chunks, embeddings, metadata
