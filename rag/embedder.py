@@ -1,14 +1,16 @@
+from typing import Any
 import requests
+from numpy import ndarray
 from config.settings import HF_API_TOKEN
 import re
 from sentence_transformers import SentenceTransformer
 
-def chunk_text(text):
+def chunk_text(text: str) -> list[str]:
     chunks = re.split(r"(?=\n## )", text)
     chunks = [chunk.strip() for chunk in chunks if chunk.strip()]
     return chunks
 
-def embed_text(texts, locally = True):
+def embed_text(texts: list, locally: bool = True) -> list[list | Any] | ndarray:
     if isinstance(texts, str):
         texts = [texts]
 
@@ -28,7 +30,7 @@ def embed_text(texts, locally = True):
         embeddings = response.json()
         return [e[0] if isinstance(e, list) and isinstance(e[0], list) else e for e in embeddings]
 
-def chunk_and_embed_documents(documents):
+def chunk_and_embed_documents(documents: list[dict[str, str]]) -> tuple[list[str], list[list | Any] | ndarray, list[dict[str, Any]]]:
     chunks = []
     embeddings = []
     metadata = []
