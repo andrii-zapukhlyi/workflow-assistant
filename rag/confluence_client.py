@@ -62,9 +62,11 @@ def get_all_pages():
     pages = []
     spaces = get_all_spaces()
     for space in spaces:
-        page_titles = [page["title"] for page in get_available_titles(space["key"])]
-        page_text = [content["text"] for content in [get_content_of_page(page["id"]) for page in get_available_titles(space["key"])] if content]
-        pages.extend([{"title": title, "text": text} for title, text in zip(page_titles, page_text)])
+        available_titles = get_available_titles(space["key"])
+        page_titles = [page["title"] for page in available_titles]
+        page_link = [f"https://{CONFLUENCE_DOMAIN}/wiki/spaces/{space['key']}/pages/{page['id']}" for page in available_titles]
+        page_text = [content["text"] for content in [get_content_of_page(page["id"]) for page in available_titles] if content]
+        pages.extend([{"title": title, "link": link, "text": text} for title, link, text in zip(page_titles, page_link, page_text)])
     return pages
 
 ## Parse HTML content from Confluence API to transform into plain text for LLM and extract images

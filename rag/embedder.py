@@ -42,7 +42,9 @@ def chunk_and_embed_documents(documents):
             embeddings.append(embedding)
             metadata.append({
                 "page_title": doc["title"],
-                "chunk_index": idx
+                "page_link": doc["link"],
+                "chunk_index": idx,
+                "total_chunks": len(chunked_text)
             })
 
     return chunks, embeddings, metadata
