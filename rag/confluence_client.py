@@ -1,10 +1,11 @@
+from typing import Any
 import requests
 from requests.auth import HTTPBasicAuth
-from bs4 import BeautifulSoup
+from bs4 import Tag, BeautifulSoup
 from config.settings import CONFLUENCE_DOMAIN, CONFLUENCE_USERNAME, CONFLUENCE_API_TOKEN
 
 ## Fetch public titles of pages (for all employees)
-def get_public_titles():
+def get_public_titles() -> list:
     url = f"https://{CONFLUENCE_DOMAIN}/wiki/rest/api/space/PUBLIC/content/page"
     auth = HTTPBasicAuth(CONFLUENCE_USERNAME, CONFLUENCE_API_TOKEN)
     response = requests.get(url, auth=auth)
@@ -17,7 +18,7 @@ def get_public_titles():
         return []
 
 ## Fetch only titles for a specific department/space
-def get_available_titles(space_key):
+def get_available_titles(space_key: str) -> list:
     url = f"https://{CONFLUENCE_DOMAIN}/wiki/rest/api/space/{space_key}/content/page"
     auth = HTTPBasicAuth(CONFLUENCE_USERNAME, CONFLUENCE_API_TOKEN)
     response = requests.get(url, auth=auth)
@@ -30,7 +31,7 @@ def get_available_titles(space_key):
         return []
 
 ## Fetch and process page
-def get_content_of_page(page_id):
+def get_content_of_page(page_id: str) -> dict[str, str | list[Any]] | None:
     url = f"https://{CONFLUENCE_DOMAIN}/wiki/rest/api/content/{page_id}?expand=body.storage"
     auth = HTTPBasicAuth(CONFLUENCE_USERNAME, CONFLUENCE_API_TOKEN)
     response = requests.get(url, auth=auth)
@@ -45,7 +46,7 @@ def get_content_of_page(page_id):
         return None
 
 ## Fetch all space keys in the Confluence domain
-def get_all_spaces():
+def get_all_spaces() -> list:
     url = f"https://{CONFLUENCE_DOMAIN}/wiki/rest/api/space"
     auth = HTTPBasicAuth(CONFLUENCE_USERNAME, CONFLUENCE_API_TOKEN)
     response = requests.get(url, auth=auth)
@@ -58,7 +59,7 @@ def get_all_spaces():
         return []
 
 ## Fetch all pages across all spaces for vector database building
-def get_all_pages():
+def get_all_pages() -> list:
     pages = []
     spaces = get_all_spaces()
     for space in spaces:
@@ -70,12 +71,15 @@ def get_all_pages():
     return pages
 
 ## Parse HTML content from Confluence API to transform into plain text for LLM and extract images
-def extract_text_and_images(soup, page_id):
+def extract_text_and_images(soup: BeautifulSoup, page_id: str) -> dict[str, str | list[str]]:
     texts = []
     images = []
 
-    def recurse(elem):
+    def recurse(elem: Tag) -> None:
         for child in elem.children:
+            if not isinstance(child, Tag):
+                continue
+
             if child.name in ['h1','h2','h3','h4', 'h5', 'h6']:
                 text = child.get_text(strip=True)
                 if text:
@@ -147,7 +151,7 @@ def extract_text_and_images(soup, page_id):
             elif hasattr(child, 'children'):
                 recurse(child)
 
-    def format_inline(tag):
+    def format_inline(tag: Tag) -> str:
         s = tag.decode_contents()
         for b in tag.find_all(['strong','b']):
             b_text = b.get_text(strip=True)
@@ -181,7 +185,7 @@ def extract_text_and_images(soup, page_id):
         plain = BeautifulSoup(s, 'html.parser').get_text()
         return plain.strip()
 
-    def extract_table(table_tag):
+    def extract_table(table_tag: Tag) -> str:
         rows = []
         header = table_tag.find('tr')
         if header:
@@ -194,7 +198,7 @@ def extract_text_and_images(soup, page_id):
                 rows.append("| " + " | ".join(cells) + " |")
         return "\n".join(rows)
 
-    def extract_code_block(tag):
+    def extract_code_block(tag: Tag) -> str | None:
         lang_tag = tag.find('ac:parameter', {'ac:name': 'language'})
         code_tag = tag.find('ac:plain-text-body')
         if code_tag:
