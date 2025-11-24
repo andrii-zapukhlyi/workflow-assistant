@@ -10,10 +10,11 @@ from langchain_groq import ChatGroq
 
 def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
     rephrase_system = (
-        "Rewrite the last user question as a standalone question."
-        "Do NOT add new details."
-        "Do NOT change meaning."
-        "Keep it short and focused."
+        "Rewrite the user query into a corrected, clear standalone question. "
+        "Fix grammar and spelling mistakes. "
+        "Do NOT add new details. "
+        "Do NOT change meaning. "
+        "Keep it short and focused. "
     )
     rephrase_prompt = ChatPromptTemplate.from_messages(
         [
@@ -30,9 +31,9 @@ def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
 
     qa_system = (
         "You are an expert assistant for Confluence documentation. "
-        "Answer ONLY based on the provided context. "
-        "If the answer is not in the context, respond exactly: "
-        "\"There is no information about the question in the provided documents for your department.\""
+        "Answer the user question using the context below. "
+        "If the context contains relevant information, provide a helpful answer even if wording differs. "
+        "If the context does not contain enough information, say: 'There is no information in the provided documents for your department.'"
         "\n\n"
         "Context:\n{context}"
     )

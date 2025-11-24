@@ -19,8 +19,6 @@ def create_employee(db: Session, full_name: str, email: str, password: str, posi
 
 def get_employee_by_email(db, email: str) -> Employee | None:
     employee = db.query(Employee).filter(Employee.email == email).first()
-    if not employee:
-        raise ValueError("Employee with the given email does not exist.")
     return employee
 
 def get_latest_session(user_id: int, db: Session) -> ChatSession | None:
