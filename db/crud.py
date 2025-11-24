@@ -1,7 +1,8 @@
-from .models import Employee, ChatHistory, ChatSession
+from db.models import Employee, ChatHistory, ChatSession
 from sqlalchemy.orm import Session
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 import datetime
+from sqlalchemy import text
 
 def create_employee(db: Session, full_name: str, email: str, password: str, position: str, department: str) -> Employee:
     new_employee = Employee(
@@ -58,3 +59,19 @@ def save_messages(session: ChatSession, messages: list[BaseMessage], db: Session
         db.add(db_msg)
     session.last_active = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
+
+def clear_chat_sessions(db: Session):
+    db.execute(text("DELETE FROM chat_sessions"))
+    db.commit()
+    seq_name = db.execute(text("""SELECT pg_get_serial_sequence('chat_sessions', 'id')""")).scalar()
+    db.execute(text(f"""SELECT setval('{seq_name}', COALESCE((SELECT MAX(id) FROM chat_sessions), 1), false);"""))
+    db.commit()
+    return
+
+def clear_chat_history(db: Session):
+    db.execute(text("DELETE FROM chat_history"))
+    db.commit()
+    seq_name = db.execute(text("""SELECT pg_get_serial_sequence('chat_history', 'id')""")).scalar()
+    db.execute(text(f"""SELECT setval('{seq_name}', COALESCE((SELECT MAX(id) FROM chat_history), 1), false);"""))
+    db.commit()
+    return
