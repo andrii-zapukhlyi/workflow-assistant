@@ -1,7 +1,7 @@
 from typing import Any
 import requests
 from numpy import ndarray
-from config.settings import HF_API_TOKEN
+from backend.config.settings import HF_API_TOKEN
 import re
 from sentence_transformers import SentenceTransformer
 

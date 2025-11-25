@@ -3,11 +3,13 @@ from langchain_chroma.vectorstores import Chroma
 from numpy import ndarray
 from embedder import chunk_and_embed_documents
 from confluence_client import get_all_pages
+import os
 
 def build_vectorstore(chunks: list[str], embeddings: ndarray, metadata: list[dict[str, Any]]) -> Chroma:
+    chroma_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "chroma_db")
     vectordb = Chroma(
         collection_name="confluence_docs",
-        persist_directory="../chroma_db"
+        persist_directory=chroma_path
     )
 
     vectordb.add_texts(

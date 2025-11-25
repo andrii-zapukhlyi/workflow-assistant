@@ -1,11 +1,13 @@
 from langchain_chroma import Chroma
 from langchain_core.vectorstores import VectorStoreRetriever
-from rag.confluence_client import get_available_titles, get_public_titles
+from backend.rag.confluence_client import get_available_titles, get_public_titles
+import os
 
 def get_retriever(space_key: str, k: int = 2) -> VectorStoreRetriever:
+    chroma_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "chroma_db")
     vectordb = Chroma(
         collection_name="confluence_docs",
-        persist_directory="chroma_db"
+        persist_directory=chroma_path
     )
 
     allowed_pages = [page["title"] for page in get_available_titles(space_key)]

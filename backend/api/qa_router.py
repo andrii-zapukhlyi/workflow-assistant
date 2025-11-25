@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from db.db_auth import get_db
-from db.crud import get_employee_by_email
-from agents.qa_agent import handle_user_query
+from backend.db.db_auth import get_db
+from backend.db.crud import get_employee_by_email
+from backend.agents.qa_agent import handle_user_query
 
 router = APIRouter()
 
@@ -29,6 +29,11 @@ def chat_with_rag(payload: QueryRequest, db: Session = Depends(get_db)):
             db
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        error_message = str(e)
+        if "rate_limit_exceeded" in error_message or "429" in error_message:
+            raise HTTPException(
+                status_code=429,
+                detail=f"LLM rate limit reached. Please try again later.\nOriginal error:\n{error_message}"
+            )
+        raise HTTPException(status_code=500, detail=f"Internal error:\n{error_message}")
     return QueryResponse(answer=answer, links=links)

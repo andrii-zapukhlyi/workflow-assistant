@@ -1,4 +1,4 @@
-from db.models import Employee, ChatHistory, ChatSession
+from backend.db.models import Employee, ChatHistory, ChatSession
 from sqlalchemy.orm import Session
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 import datetime

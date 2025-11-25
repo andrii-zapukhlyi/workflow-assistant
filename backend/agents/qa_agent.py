@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from langchain_core.messages import HumanMessage, AIMessage
-from rag.llm_client import run_qa_chain
-from db.crud import get_latest_session, create_session, load_chat_history, save_messages
+from backend.rag.llm_client import run_qa_chain
+from backend.db.crud import get_latest_session, create_session, load_chat_history, save_messages
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 import os
@@ -38,6 +38,7 @@ def handle_user_query(user_id: int, user_message: str, space_key: str, db) -> Tu
 
     chat_history = load_chat_history(session)
     assistant_answer, links = run_qa_chain(user_message, space_key, chat_history)
+    #assistant_answer, links = "Hello! This is a placeholder answer.", ["https://rag-workflow-assistant.atlassian.net/wiki/spaces/AI/pages/1234567"]
 
     new_messages = [
         HumanMessage(content=user_message),

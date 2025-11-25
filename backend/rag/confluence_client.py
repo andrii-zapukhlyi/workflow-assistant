@@ -2,7 +2,7 @@ from typing import Any
 import requests
 from requests.auth import HTTPBasicAuth
 from bs4 import Tag, BeautifulSoup
-from config.settings import CONFLUENCE_DOMAIN, CONFLUENCE_USERNAME, CONFLUENCE_API_TOKEN
+from backend.config.settings import CONFLUENCE_DOMAIN, CONFLUENCE_USERNAME, CONFLUENCE_API_TOKEN
 
 ## Fetch public titles of pages (for all employees)
 def get_public_titles() -> list:

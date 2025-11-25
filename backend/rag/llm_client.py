@@ -5,7 +5,7 @@ from langchain_classic.chains import create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
 from langchain_core.messages import BaseMessage
-from rag.retriever import get_retriever
+from backend.rag.retriever import get_retriever
 from langchain_groq import ChatGroq
 
 def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
@@ -32,7 +32,7 @@ def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
     qa_system = (
         "You are an expert assistant for Confluence documentation. "
         "Answer the user question using the context below. "
-        "If the context contains relevant information, provide a helpful answer even if wording differs. "
+        "If the context contains relevant information, provide a helpful answer even if wording differs, but don't add additional phrases like 'based on documentation', 'the information provided'. "
         "If the context does not contain enough information, say: 'There is no information in the provided documents for your department.'"
         "\n\n"
         "Context:\n{context}"
@@ -40,22 +40,26 @@ def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
     qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", qa_system),
-            MessagesPlaceholder(variable_name="chat_history"),
             ("user", "{input}"),
         ]
     )
 
     combine_docs = create_stuff_documents_chain(llm, qa_prompt)
     retrieval_chain = create_retrieval_chain(history_retriever, combine_docs)
+
     return retrieval_chain
+
+def trim_history(chat_history, max_messages=3):
+    return chat_history[-max_messages:]
 
 def run_qa_chain(user_message: str, space_key: str, chat_history: List[BaseMessage]) -> Tuple[str, List[str]]:
     llm = ChatGroq(
         api_key=os.environ.get("GROQ_API_KEY"),
-        model="llama-3.3-70b-versatile"
+        model="meta-llama/llama-4-maverick-17b-128e-instruct"
     )
 
-    retriever = get_retriever(space_key, k=4)
+    chat_history = trim_history(chat_history, max_messages=3)
+    retriever = get_retriever(space_key, k=2)
     qa_chain = build_qa_chain(llm, retriever)
 
     inputs: dict[str, Any] = {
