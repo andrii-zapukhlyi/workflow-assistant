@@ -17,19 +17,22 @@ def create_employee(db: Session, full_name: str, email: str, password: str, posi
     db.refresh(new_employee)
     return new_employee
 
-def get_employee_by_email(db, email: str) -> Employee | None:
+def get_employee_by_email(db: Session, email: str) -> Employee | None:
     employee = db.query(Employee).filter(Employee.email == email).first()
     return employee
 
-def get_latest_session(user_id: int, db: Session) -> ChatSession | None:
+def get_session_by_id(db: Session, session_id: int) -> ChatSession | None:
+    return db.query(ChatSession).filter(ChatSession.id == session_id).first()
+
+def get_sessions_for_user(db, user_id: int):
     return (
         db.query(ChatSession)
         .filter(ChatSession.user_id == user_id)
         .order_by(ChatSession.last_active.desc())
-        .first()
+        .all()
     )
 
-def create_session(user_id: int, name: str, db: Session) -> ChatSession:
+def create_session(db: Session, user_id: int, name: str) -> ChatSession:
     session = ChatSession(user_id=user_id, name=name)
     db.add(session)
     db.commit()
@@ -45,7 +48,7 @@ def load_chat_history(session: ChatSession) -> list[BaseMessage]:
             messages.append(AIMessage(content=msg.content))
     return messages
 
-def save_messages(session: ChatSession, messages: list[BaseMessage], db: Session):
+def save_messages(db: Session, session: ChatSession, messages: list[BaseMessage]):
     for msg in messages:
         if isinstance(msg, HumanMessage):
             role = "user"
