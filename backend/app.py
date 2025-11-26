@@ -1,16 +1,10 @@
 from fastapi import FastAPI
-from backend.api.chatbot_router import router as chat_router
-
-from backend.db.db_auth import get_db
-from backend.db.crud import clear_chat_history, clear_chat_sessions
+from backend.api import auth_router, chat_router
 
 def main():
-    #db = next(get_db())
-    #clear_chat_history(db)
-    #clear_chat_sessions(db)
-
     app = FastAPI()
-    app.include_router(chat_router, prefix="/api/chat")
+    app.include_router(auth_router.router, prefix="/auth")
+    app.include_router(chat_router.router, prefix="/chat")
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 

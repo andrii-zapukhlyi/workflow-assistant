@@ -3,11 +3,11 @@ from backend.rag.llm_client import run_qa_chain
 from backend.db.crud import get_session_by_id, load_chat_history, save_messages
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
-import os
+from backend.config.settings import GROQ_API_KEY
 
 def generate_session_name(first_message: str) -> str:
     llm = ChatGroq(
-        api_key=os.environ.get("GROQ_API_KEY"),
+        api_key=GROQ_API_KEY,
         model="llama-3.3-70b-versatile"
     )
 

@@ -1,5 +1,4 @@
 from typing import Any, List, Tuple
-import os
 from langchain_classic.chains.history_aware_retriever import create_history_aware_retriever
 from langchain_classic.chains import create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
@@ -7,6 +6,7 @@ from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
 from langchain_core.messages import BaseMessage
 from backend.rag.retriever import get_retriever
 from langchain_groq import ChatGroq
+from backend.config.settings import GROQ_API_KEY
 
 def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
     rephrase_system = (
@@ -54,7 +54,7 @@ def trim_history(chat_history, max_messages=3):
 
 def run_qa_chain(user_message: str, space_key: str, chat_history: List[BaseMessage]) -> Tuple[str, List[str]]:
     llm = ChatGroq(
-        api_key=os.environ.get("GROQ_API_KEY"),
+        api_key=GROQ_API_KEY,
         model="meta-llama/llama-4-maverick-17b-128e-instruct"
     )
 
