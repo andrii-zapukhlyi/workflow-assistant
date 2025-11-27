@@ -24,8 +24,7 @@ def generate_session_name(first_message: str) -> str:
     if not title:
         title = first_message[:8] + "..."
 
-    title.capitalize()
-    return title
+    return title.capitalize()
 
 
 def handle_user_query(session_id: int, user_message: str, space_key: str, db) -> tuple[str, list[str]]:

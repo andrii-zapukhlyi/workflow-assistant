@@ -20,7 +20,7 @@ class ChatSession(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
-    name = Column(String, nullable=False)
+    name = Column(String, default=None, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
     last_active = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
@@ -37,3 +37,12 @@ class ChatHistory(Base):
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
     session = relationship("ChatSession", back_populates="messages")
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"))
+    token = Column(String(255), unique=True, index=True)
+    expires_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))

@@ -55,7 +55,7 @@ def trim_history(chat_history, max_messages=3):
 def run_qa_chain(user_message: str, space_key: str, chat_history: List[BaseMessage]) -> Tuple[str, List[str]]:
     llm = ChatGroq(
         api_key=GROQ_API_KEY,
-        model="meta-llama/llama-4-maverick-17b-128e-instruct"
+        model="llama-3.3-70b-versatile"
     )
 
     chat_history = trim_history(chat_history, max_messages=3)

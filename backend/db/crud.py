@@ -1,8 +1,8 @@
-from backend.db.models import Employee, ChatHistory, ChatSession
+from backend.db.models import Employee, ChatHistory, ChatSession, RefreshToken
 from sqlalchemy.orm import Session
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 import datetime
-from sqlalchemy import text
+
 
 def create_employee(db: Session, full_name: str, email: str, password: str, position: str, department: str) -> Employee:
     employee = Employee(
@@ -27,7 +27,7 @@ def get_session_by_id(db: Session, session_id: int) -> ChatSession | None:
     return db.query(ChatSession).filter(ChatSession.id == session_id).first()
 
 
-def get_sessions_for_user(db, user_id: int):
+def get_sessions_for_user(db, user_id: int) -> list[ChatSession]:
     return (
         db.query(ChatSession)
         .filter(ChatSession.user_id == user_id)
@@ -36,11 +36,27 @@ def get_sessions_for_user(db, user_id: int):
     )
 
 
-def create_session(db: Session, user_id: int, name: str) -> ChatSession:
+def create_session(db: Session, user_id: int, name: str | None) -> ChatSession:
     session = ChatSession(user_id=user_id, name=name)
     db.add(session)
     db.commit()
     db.refresh(session)
+    return session
+
+
+def delete_session(db: Session, session_id: int):
+    session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+    if session:
+        db.delete(session)
+        db.commit()
+
+
+def rename_session(db: Session, session_id: int, new_name: str) -> ChatSession | None:
+    session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+    if session:
+        session.name = new_name
+        db.commit()
+
     return session
 
 
@@ -68,7 +84,7 @@ def save_messages(db: Session, session: ChatSession, messages: list[BaseMessage]
     db.commit()
 
 
-def ensure_session_ownership(db: Session, session_id: int, user_id: int):
+def ensure_session_ownership(db: Session, session_id: int, user_id: int) -> ChatSession | None:
     session = db.query(ChatSession).filter(
         ChatSession.id == session_id,
         ChatSession.user_id == user_id
@@ -76,19 +92,29 @@ def ensure_session_ownership(db: Session, session_id: int, user_id: int):
     return session
 
 
-def clear_chat_sessions(db: Session):
-    db.execute(text("DELETE FROM chat_sessions"))
+def create_refresh_token(db: Session, user_id: int, token: str, expires_at: datetime.datetime) -> RefreshToken:
+    db.query(RefreshToken).filter(RefreshToken.user_id == user_id).delete()
     db.commit()
-    seq_name = db.execute(text("""SELECT pg_get_serial_sequence('chat_sessions', 'id')""")).scalar()
-    db.execute(text(f"""SELECT setval('{seq_name}', COALESCE((SELECT MAX(id) FROM chat_sessions), 1), false);"""))
+
+    refresh_token = RefreshToken(
+        user_id=user_id,
+        token=token,
+        expires_at=expires_at
+    )
+    db.add(refresh_token)
     db.commit()
-    return
+    db.refresh(refresh_token)
+    return refresh_token
 
 
-def clear_chat_history(db: Session):
-    db.execute(text("DELETE FROM chat_history"))
+def get_refresh_token(db: Session, hashed_token: str) -> RefreshToken | None:
+    return db.query(RefreshToken).filter(RefreshToken.token == hashed_token).first()
+
+
+def delete_refresh_token(db: Session, hashed_token: str):
+    db.query(RefreshToken).filter(RefreshToken.token == hashed_token).delete()
     db.commit()
-    seq_name = db.execute(text("""SELECT pg_get_serial_sequence('chat_history', 'id')""")).scalar()
-    db.execute(text(f"""SELECT setval('{seq_name}', COALESCE((SELECT MAX(id) FROM chat_history), 1), false);"""))
-    db.commit()
-    return
+
+
+def get_user_by_refresh_token(db: Session, token_db: RefreshToken) -> Employee | None:
+    return db.query(Employee).filter(Employee.id == token_db.user_id).first()
