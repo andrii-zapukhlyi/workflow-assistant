@@ -1,29 +1,40 @@
-from typing import Any
-from langchain_chroma.vectorstores import Chroma
-from numpy import ndarray
-from embedder import chunk_and_embed_documents
+from langchain_qdrant import QdrantVectorStore
+from langchain_huggingface.embeddings import HuggingFaceEndpointEmbeddings
+from langchain_core.documents import Document
+from chunker import chunk_and_prepare_metadata
 from confluence_client import get_all_pages
-import os
+from backend.config.settings import HF_API_TOKEN
+from qdrant_client import QdrantClient
 
-def build_vectorstore(chunks: list[str], embeddings: ndarray, metadata: list[dict[str, Any]]) -> Chroma:
-    chroma_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "chroma_db")
-    vectordb = Chroma(
-        collection_name="confluence_docs",
-        persist_directory=chroma_path
+def delete_old_vector_db(url: str, collection: str) -> None:
+    client = QdrantClient(url=url)
+    if client.collection_exists(collection):
+        client.delete_collection(collection_name=collection)
+
+def build_vector_db(url: str, collection: str) -> None:
+    embedding = HuggingFaceEndpointEmbeddings(
+        model="sentence-transformers/all-MiniLM-L6-v2",
+        task="feature-extraction",
+        huggingfacehub_api_token=HF_API_TOKEN,
     )
 
-    vectordb.add_texts(
-        texts=chunks,
-        metadatas=metadata,
-        embeddings=embeddings
+    documents = get_all_pages()
+    chunks, metadata = chunk_and_prepare_metadata(documents)
+
+    docs = [Document(page_content=chunk, metadata=meta) for chunk, meta in zip(chunks, metadata)]
+
+    QdrantVectorStore.from_documents(
+        docs,
+        embedding=embedding,
+        url=url,
+        collection_name=collection,
     )
 
-    return vectordb
-
-def main():
-    pages = get_all_pages()
-    chunks, embeddings, metadata = chunk_and_embed_documents(pages)
-    vectordb = build_vectorstore(chunks, embeddings, metadata)
+def main() -> None:
+    collection_name = "confluence_docs"
+    qdrant_url = "http://localhost:6333"
+    delete_old_vector_db(url=qdrant_url, collection=collection_name)
+    build_vector_db(url=qdrant_url, collection=collection_name)
 
 if __name__ == "__main__":
     main()
