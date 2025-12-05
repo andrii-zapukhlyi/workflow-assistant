@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON
 import datetime
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -7,13 +7,15 @@ Base = declarative_base()
 class Employee(Base):
     __tablename__ = "employees"
     id = Column(Integer, primary_key=True)
-    full_name = Column(String(255), nullable=False)
-    email = Column(String(255), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
-    position = Column(String(100), nullable=False)
-    department = Column(String(100), nullable=False)
+    full_name = Column(Text, nullable=False)
+    email = Column(Text, unique=True, nullable=False)
+    password = Column(Text, nullable=False)
+    department = Column(Text, nullable=False)
+    position_id = Column(Integer, ForeignKey("positions_skills.id", ondelete="SET NULL"), nullable=True)
 
+    position_obj = relationship("PositionsSkills", back_populates="employees")
     sessions = relationship("ChatSession", back_populates="user")
+    refresh_tokens = relationship("RefreshToken", back_populates="user")
 
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
@@ -46,3 +48,14 @@ class RefreshToken(Base):
     token = Column(String(255), unique=True, index=True)
     expires_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
+
+    user = relationship("Employee", back_populates="refresh_tokens")
+
+class PositionsSkills(Base):
+    __tablename__ = "positions_skills"
+    id = Column(Integer, primary_key=True)
+    position = Column(Text, unique=True, nullable=False)
+    position_level = Column(Text, nullable=False)
+    skills = Column(JSON, nullable=False)
+
+    employees = relationship("Employee", back_populates="position_obj")

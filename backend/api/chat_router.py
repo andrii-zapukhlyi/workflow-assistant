@@ -1,11 +1,35 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.db.crud import create_session, delete_session, rename_session, get_sessions_for_user, ensure_session_ownership
-from backend.agents.qa_agent import handle_user_query, generate_session_name
+from backend.agents.qa_agent import handle_user_query
 from backend.db.db_auth import get_db
 from backend.auth.auth import get_current_user
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from backend.config.settings import GROQ_API_KEY
 
 router = APIRouter()
+
+def generate_session_name(first_message: str) -> str:
+    llm = ChatGroq(
+        api_key=GROQ_API_KEY,
+        model="llama-3.3-70b-versatile"
+    )
+
+    prompt = ChatPromptTemplate.from_messages([
+        ("system",
+         "Generate a short title (max 5 words) summarizing the user's message. "
+         "Do NOT add new information. Keep it concise, neutral, and lowercase."),
+        ("user", first_message)
+    ])
+
+    response = llm.invoke(prompt.format_messages())
+    title = response.content.strip()
+
+    if not title:
+        title = first_message[:8] + "..."
+
+    return title.capitalize()
 
 
 @router.post("/create_chat")

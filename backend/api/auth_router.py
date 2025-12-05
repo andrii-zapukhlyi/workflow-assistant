@@ -2,12 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from backend.db.db_auth import get_db
-from backend.db.crud import get_employee_by_email, create_employee, create_refresh_token, get_refresh_token, get_user_by_refresh_token, delete_refresh_token
+from backend.db.crud import get_employee_by_email, create_employee, create_refresh_token, get_refresh_token, get_user_by_refresh_token, delete_refresh_token, get_current_positions_levels, get_position_by_name_level, create_position_skill
 from backend.auth.auth import verify_password, create_access_token, hash_password, hash_refresh_token
 from pydantic import BaseModel
 import uuid
 from fastapi.responses import JSONResponse
 import datetime
+from typing import List
+from langchain_groq import ChatGroq
+from backend.config.settings import GROQ_API_KEY
+from langchain_core.output_parsers import PydanticOutputParser
 
 class RegisterUser(BaseModel):
     full_name: str
@@ -15,11 +19,14 @@ class RegisterUser(BaseModel):
     password: str
     position: str
     department: str
+    position_level: str
 
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+class PositionSkillsExtraction(BaseModel):
+    skills: List[str]
 
 router = APIRouter(tags=["auth"])
 
@@ -31,22 +38,60 @@ def issue_refresh_token(db: Session, user_id: int):
     token_db = create_refresh_token(db, user_id, hashed, expires)
     return token_db
 
+def generate_skills_for_position(position: str, position_level: str) -> list[str]:
+    llm = ChatGroq(
+        model="llama-3.3-70b-versatile",
+        api_key=GROQ_API_KEY
+    )
+
+    prompt = (
+        f"Generate a JSON list of hard skills for the position '{position}' at level '{position_level}'. "
+        "Include skills from lower levels for senior roles. "
+        "Focus ON tools, technologies, programming languages, frameworks, NOT on domain knowledge or soft skills (e.g. google meet is better than video conferencing). "
+        "Limit: Intern=5 skills, Junior=7, Middle=10, Senior/Team Lead=15. "
+        "Return JSON exactly like this: {\"skills\": [\"skill1\", \"skill2\"]}. "
+        "Do NOT include explanations, markdown, or anything else."
+    )
+
+
+    parser = PydanticOutputParser(pydantic_object=PositionSkillsExtraction)
+
+    try:
+        response = llm.invoke([{"role": "system", "content": prompt}])
+        answer = response.content
+        skills = parser.parse(answer).skills
+    except Exception as e:
+        print(f"LLM parsing failed for {position} {position_level}: {e}")
+        skills = []
+    return [skill.lower() for skill in skills]
+
 
 @router.post("/register", response_model=Token)
 def register_user(payload: RegisterUser, db: Session = Depends(get_db)):
     email = payload.email.lower().strip()
     department = payload.department.upper().strip()
     position = payload.position.upper().strip()
+    position_level = payload.position_level.upper().strip()
     password = hash_password(payload.password)
     allowed_departments = {"ML", "DB", "HR", "WEB"}
+    allowed_position_levels = {"INTERN", "JUNIOR", "MIDDLE", "SENIOR", "TEAM LEAD"}
 
     if department not in allowed_departments:
         raise HTTPException(status_code=400, detail="Invalid department")
 
+    if position_level not in allowed_position_levels:
+        raise HTTPException(status_code=400, detail="Invalid position level")
+
     if get_employee_by_email(db, email):
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    employee = create_employee(db, payload.full_name, email, password, position, department)
+    if (position, position_level) not in get_current_positions_levels(db):
+        skills = generate_skills_for_position(position, position_level)
+        position_obj = create_position_skill(db, position, position_level, skills)
+    else:
+        position_obj = get_position_by_name_level(db, position, position_level)
+
+    employee = create_employee(db, payload.full_name, email, password, position_obj.id, department)
     access_token = create_access_token({"sub": employee.email})
     refresh_token_db = issue_refresh_token(db, employee.id)
 
