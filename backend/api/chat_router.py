@@ -75,7 +75,16 @@ def get_chat_messages(session_id: int, current_user=Depends(get_current_user), d
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
-    return [{"role": m.role, "content": m.content} for m in session.messages]
+    return [
+        {
+            "id": m.id,
+            "chat_id": session.id,
+            "role": m.role,
+            "content": m.content,
+            "created_at": m.created_at.isoformat()
+        }
+        for m in session.messages
+    ]
 
 
 @router.post("/chats/{session_id}/ask")
