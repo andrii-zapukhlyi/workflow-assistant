@@ -1,7 +1,26 @@
 __pycache__/
 .idea/
 .env
+.DS_Store
 .gradio/
 
 frontend/node_modules/
 frontend/.next/
+frontend/.pnp
+frontend/.pnp.*
+frontend/.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+frontend/out/
+frontend/build
+frontend/*.pem
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+frontend/.env*
+frontend/.vercel
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
