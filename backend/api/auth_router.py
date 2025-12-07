@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from backend.db.db_auth import get_db
 from backend.db.crud import get_employee_by_email, create_employee, create_refresh_token, get_refresh_token, get_user_by_refresh_token, delete_refresh_token, get_current_positions_levels, get_position_by_name_level, create_position_skill
-from backend.auth.auth import verify_password, create_access_token, hash_password, hash_refresh_token
+from backend.auth.auth import verify_password, create_access_token, hash_password, hash_refresh_token, get_current_user
 from pydantic import BaseModel
 import uuid
 from fastapi.responses import JSONResponse
@@ -172,3 +172,15 @@ def logout(request: Request, db: Session = Depends(get_db)):
     response = JSONResponse({"message": "Logged out"})
     response.delete_cookie("refresh_token")
     return response
+
+
+@router.get("/me")
+def get_current_user_info(current_user=Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "full_name": current_user.full_name,
+        "email": current_user.email,
+        "department": current_user.department,
+        "position": current_user.position_obj.position,
+        "position_level": current_user.position_obj.position_level
+    }
