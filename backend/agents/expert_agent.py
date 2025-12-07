@@ -1,7 +1,7 @@
 from langchain_groq import ChatGroq
-from backend.config.settings import GROQ_API_KEY
-from backend.expert_finder.skill_lookup import skill_lookup_tool
-from backend.expert_finder.skill_extractor import skill_extractor_tool
+from config.settings import GROQ_API_KEY
+from expert_finder.skill_lookup import skill_lookup_tool
+from expert_finder.skill_extractor import skill_extractor_tool
 from sqlalchemy.orm import Session
 
 def ask_expert_agent(db: Session, query: str, user_department: str) -> str:
@@ -25,9 +25,3 @@ def ask_expert_agent(db: Session, query: str, user_department: str) -> str:
         {"role": "system", "content": prompt},
     ])
     return response.content
-
-
-from backend.db.db_auth import get_db
-db = get_db()
-db = next(db)
-print(ask_expert_agent(db, "I need help with spring", "ML"))

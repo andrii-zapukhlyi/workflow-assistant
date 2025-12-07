@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage, AIMessage
-from backend.rag_qa.llm_client import run_qa_chain
-from backend.db.crud import get_session_by_id, load_chat_history, save_messages
+from rag_qa.llm_client import run_qa_chain
+from db.crud import get_session_by_id, load_chat_history, save_messages
 
 def handle_user_query(session_id: int, user_message: str, space_key: str, db) -> tuple[str, list[str]]:
     session = get_session_by_id(db, session_id)

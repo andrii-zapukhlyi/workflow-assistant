@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "backend"
+version = "0.1.0"
+description = "ChatBot backend"
+authors = ["Andrii Zapukhlyi <andrii.zapukhlyi@gmail.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = ">=0.124.0,<0.125.0"
+uvicorn = ">=0.38.0,<0.39.0"
+sqlalchemy = ">=2.0.44,<3.0.0"
+qdrant-client = ">=1.16.1,<2.0.0"
+dotenv = "^0.9.9"
+psycopg2 = "^2.9.11"
+langchain-core = "^1.1.1"
+python-jose = {extras = ["cryptography"], version = "^3.5.0"}
+passlib = "^1.7.4"
+langchain-groq = "^1.1.0"
+python-multipart = "^0.0.20"
+langchain-classic = "^1.0.0"
+langchain-qdrant = "^1.1.0"
+langchain-huggingface = "^1.1.0"
+bs4 = "^0.0.2"
+bcrypt = "4.0.1"
+sentence-transformers = "^5.1.2"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

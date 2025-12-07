@@ -4,10 +4,10 @@ from passlib.context import CryptContext
 from fastapi import HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from backend.db.crud import get_employee_by_email
-from backend.db.db_auth import get_db
-from backend.db.models import Employee
-from backend.config.settings import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRATION_MINUTES
+from db.crud import get_employee_by_email
+from db.db_auth import get_db
+from db.models import Employee
+from config.settings import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRATION_MINUTES
 import hashlib
 
 

@@ -4,9 +4,9 @@ from langchain_classic.chains import create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
 from langchain_core.messages import BaseMessage
-from backend.rag_qa.retriever import get_retriever
+from rag_qa.retriever import get_retriever
 from langchain_groq import ChatGroq
-from backend.config.settings import GROQ_API_KEY
+from config.settings import GROQ_API_KEY
 
 def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
     rephrase_system = (

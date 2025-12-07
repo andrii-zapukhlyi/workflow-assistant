@@ -3,7 +3,7 @@ from langchain_huggingface.embeddings import HuggingFaceEndpointEmbeddings
 from langchain_core.documents import Document
 from chunker import chunk_and_prepare_metadata
 from confluence_client import get_all_pages
-from backend.config.settings import HF_API_TOKEN
+from config.settings import HF_API_TOKEN
 from qdrant_client import QdrantClient
 
 def delete_old_vector_db(url: str, collection: str) -> None:

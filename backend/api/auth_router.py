@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from backend.db.db_auth import get_db
-from backend.db.crud import get_employee_by_email, create_employee, create_refresh_token, get_refresh_token, get_user_by_refresh_token, delete_refresh_token, get_current_positions_levels, get_position_by_name_level, create_position_skill
-from backend.auth.auth import verify_password, create_access_token, hash_password, hash_refresh_token, get_current_user
+from db.db_auth import get_db
+from db.crud import get_employee_by_email, create_employee, create_refresh_token, get_refresh_token, get_user_by_refresh_token, delete_refresh_token, get_current_positions_levels, get_position_by_name_level, create_position_skill
+from auth.auth import verify_password, create_access_token, hash_password, hash_refresh_token, get_current_user
 from pydantic import BaseModel
 import uuid
 from fastapi.responses import JSONResponse
 import datetime
 from typing import List
 from langchain_groq import ChatGroq
-from backend.config.settings import GROQ_API_KEY
+from config.settings import GROQ_API_KEY
 from langchain_core.output_parsers import PydanticOutputParser
 
 class RegisterUser(BaseModel):

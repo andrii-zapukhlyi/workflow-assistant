@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 from langchain_groq import ChatGroq
-from backend.config.settings import GROQ_API_KEY
+from config.settings import GROQ_API_KEY
 from langchain_core.output_parsers import PydanticOutputParser
 
 class SkillExtraction(BaseModel):

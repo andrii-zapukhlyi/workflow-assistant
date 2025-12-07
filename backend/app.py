@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from backend.api import auth_router, chat_router
+from api import auth_router, chat_router
 from fastapi.middleware.cors import CORSMiddleware
 
 def main():

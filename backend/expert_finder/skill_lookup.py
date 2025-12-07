@@ -1,5 +1,5 @@
 from typing import List, Dict
-from backend.db.crud import get_employees_by_skills
+from db.crud import get_employees_by_skills
 from sqlalchemy.orm import Session
 
 def skill_lookup_tool(db: Session, skills: List[str]) -> Dict:
