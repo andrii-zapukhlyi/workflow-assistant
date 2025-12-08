@@ -41,9 +41,8 @@ export const chatApi = {
     }))
   },
 
-  // Message operations
   async getMessages(chatId: string): Promise<Message[]> {
-    const data = await authService.apiCall<{ role: string; content: string }[]>(
+    const data = await authService.apiCall<{ role: string; content: string; links?: string[]; titles?: string[] }[]>(
       `/chat/chats/${chatId}/messages`,
       "GET"
     )
@@ -53,13 +52,16 @@ export const chatApi = {
       role: m.role as "user" | "assistant",
       content: m.content,
       created_at: new Date().toISOString(),
+      links: m.links,
+      titles: m.titles,
     }))
   },
 
-  async sendMessage(chatId: string, message: string): Promise<{ answer: string; links: string[]; session_name: string }> {
+  async sendMessage(chatId: string, message: string): Promise<{ answer: string; links: string[]; titles: string[]; session_name: string }> {
     const data = await authService.apiCall<{
       answer: string
       links: string[]
+      titles: string[]
       session_name: string
     }>(`/chat/chats/${chatId}/ask`, "POST", { query: message })
     return data

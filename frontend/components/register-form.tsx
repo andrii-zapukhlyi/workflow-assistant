@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,7 @@ const DEPARTMENTS = ["ML", "DB", "HR", "WEB"]
 const POSITION_LEVELS = ["Intern", "Junior", "Senior", "Team Lead"]
 
 export function RegisterForm() {
-  const { register, loading, error } = useAuth()
+  const { register, loading, error, setError } = useAuth()
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -25,6 +25,12 @@ export function RegisterForm() {
     positionLevel: "",
   })
   const [localError, setLocalError] = useState("")
+
+  // Clear errors when component mounts (switching from login)
+  useEffect(() => {
+    setLocalError("")
+    setError(null)
+  }, [setError])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target

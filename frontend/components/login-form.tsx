@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,10 +10,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link"
 
 export function LoginForm() {
-  const { login, loading, error } = useAuth()
+  const { login, loading, error, setError } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [localError, setLocalError] = useState("")
+
+  // Clear errors when component mounts (switching from register)
+  useEffect(() => {
+    setLocalError("")
+    setError(null)
+  }, [setError])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

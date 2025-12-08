@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Plus, LogOut, Menu, X, Trash2, Edit2, Check, XIcon } from "lucide-react"
@@ -15,6 +15,7 @@ interface SidebarProps {
   currentChatId?: string
   onChatSelect?: (chatId: string) => void
   onNewChat?: () => void
+  isGenerating?: boolean
 }
 
 export interface SidebarRef {
@@ -22,7 +23,7 @@ export interface SidebarRef {
   updateChatTitle: (chatId: string, newTitle: string) => void
 }
 
-export const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ currentChatId, onChatSelect, onNewChat }, ref) => {
+export const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ currentChatId, onChatSelect, onNewChat, isGenerating }, ref) => {
   const [chats, setChats] = useState<Chat[]>([])
   const [loading, setLoading] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -35,21 +36,21 @@ export const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ currentChat
   }, [])
 
   React.useImperativeHandle(ref, () => ({
-    refreshChats: loadChats,
+    refreshChats: () => loadChats(true),
     updateChatTitle: (chatId: string, newTitle: string) => {
       setChats(prev => prev.map(chat => chat.id === chatId ? { ...chat, title: newTitle } : chat))
     }
   }))
 
-  const loadChats = async () => {
+  const loadChats = async (isRefresh = false) => {
     try {
-      setLoading(true)
+      if (!isRefresh) setLoading(true)
       const data = await chatApi.getChats()
       setChats(data || [])
     } catch (error) {
       console.error("Failed to load chats:", error)
     } finally {
-      setLoading(false)
+      if (!isRefresh) setLoading(false)
     }
   }
 
@@ -93,109 +94,92 @@ export const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ currentChat
     setEditingTitle(chat.title || "") // Ensure fallback
   }
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-sidebar">
-      {/* New Chat Button */}
-      <div className="p-4 border-b border-sidebar-border">
-        <Button onClick={handleNewChat} className="w-full gap-2" size="sm">
-          <Plus className="h-4 w-4" />
-          New Chat
-        </Button>
-      </div>
+  const handleChatClick = useCallback((chatId: string) => {
+    if (isGenerating) return
+    onChatSelect?.(chatId)
+    setMobileOpen(false)
+  }, [isGenerating, onChatSelect])
 
-      {/* Chat History */}
-      <ScrollArea className="flex-1">
-        <div className="space-y-2 p-4">
-          {loading ? (
-            <div className="text-xs text-sidebar-foreground/50 text-center py-8">Loading chats...</div>
-          ) : !chats?.length ? (
-            <div className="text-xs text-sidebar-foreground/50 text-center py-8">No chats yet</div>
-          ) : (
-            chats.map((chat, index) => (
-              <div
-                key={chat.id || `chat-${index}`}
-                onClick={() => {
-                  onChatSelect?.(chat.id)
-                  setMobileOpen(false)
-                }}
-                className={`p-3 rounded-lg cursor-pointer transition-colors text-sm group flex items-center gap-2 ${currentChatId === chat.id
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-              >
-                {editingId === chat.id ? (
-                  <div className="flex-1 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                    <Input
-                      value={editingTitle}
-                      onChange={(e) => setEditingTitle(e.target.value)}
-                      className="h-7 text-xs"
-                      autoFocus
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleRenameChat(chat.id)
-                      }}
-                    >
-                      <Check className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setEditingId(null)
-                      }}
-                    >
-                      <XIcon className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <span className="flex-1 truncate">{chat.title}</span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        startEditingChat(chat)
-                      }}
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive"
-                      onClick={(e) => handleDeleteChat(e, chat.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </>
-                )}
+  // Chat list content - extracted to avoid duplication
+  const chatListContent = (
+    <div className="space-y-2 p-4">
+      {loading ? (
+        <div className="text-xs text-sidebar-foreground/50 text-center py-8">Loading chats...</div>
+      ) : !chats?.length ? (
+        <div className="text-xs text-sidebar-foreground/50 text-center py-8">No chats yet</div>
+      ) : (
+        chats.map((chat, index) => (
+          <div
+            key={chat.id || `chat-${index}`}
+            onClick={() => handleChatClick(chat.id)}
+            className={`p-3 rounded-lg transition-colors text-sm group flex items-center gap-2 ${isGenerating && currentChatId !== chat.id
+              ? "opacity-50 cursor-not-allowed"
+              : "cursor-pointer"
+              } ${currentChatId === chat.id
+                ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                : "text-sidebar-foreground hover:bg-sidebar-accent"
+              }`}
+          >
+            {editingId === chat.id ? (
+              <div className="flex-1 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <Input
+                  value={editingTitle}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  className="h-7 text-xs"
+                  autoFocus
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRenameChat(chat.id)
+                  }}
+                >
+                  <Check className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setEditingId(null)
+                  }}
+                >
+                  <XIcon className="h-3 w-3" />
+                </Button>
               </div>
-            ))
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* Logout Button */}
-      <div className="p-4 border-t border-sidebar-border">
-        <Button
-          onClick={() => logout()}
-          variant="ghost"
-          className="w-full gap-2 text-sidebar-foreground hover:bg-sidebar-accent"
-          size="sm"
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
-      </div>
+            ) : (
+              <>
+                <span className="flex-1 truncate">{chat.title}</span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                  disabled={isGenerating}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (!isGenerating) startEditingChat(chat)
+                  }}
+                >
+                  <Edit2 className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive"
+                  disabled={isGenerating}
+                  onClick={(e) => !isGenerating && handleDeleteChat(e, chat.id)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </>
+            )}
+          </div>
+        ))
+      )}
     </div>
   )
 
@@ -209,15 +193,77 @@ export const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ currentChat
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:w-64 md:h-screen md:flex-col">
-        <SidebarContent />
+      <div className="hidden md:flex md:w-90 md:h-screen md:flex-col">
+        <div className="flex flex-col h-full bg-sidebar overflow-hidden border-r border-border">
+          {/* New Chat Button */}
+          <div className="p-4 border-b border-sidebar-border shrink-0">
+            <Button
+              onClick={handleNewChat}
+              className="w-full gap-2"
+              size="sm"
+              disabled={isGenerating}
+            >
+              <Plus className="h-4 w-4" />
+              New Chat
+            </Button>
+          </div>
+
+          {/* Chat History */}
+          <ScrollArea className="flex-1 min-h-0">
+            {chatListContent}
+          </ScrollArea>
+
+          {/* Logout Button */}
+          <div className="px-4 py-3 border-t border-sidebar-border shrink-0">
+            <Button
+              onClick={() => logout()}
+              variant="ghost"
+              className="w-full gap-2 text-sidebar-foreground hover:bg-sidebar-accent h-10"
+              size="sm"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Mobile Sidebar Overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden bg-black/20">
-          <div className="absolute inset-y-0 left-0 w-64 bg-sidebar">
-            <SidebarContent />
+          <div className="absolute inset-y-0 left-0 w-90 bg-sidebar">
+            <div className="flex flex-col h-full bg-sidebar overflow-hidden border-r border-border">
+              {/* New Chat Button */}
+              <div className="p-4 border-b border-sidebar-border shrink-0">
+                <Button
+                  onClick={handleNewChat}
+                  className="w-full gap-2"
+                  size="sm"
+                  disabled={isGenerating}
+                >
+                  <Plus className="h-4 w-4" />
+                  New Chat
+                </Button>
+              </div>
+
+              {/* Chat History */}
+              <ScrollArea className="flex-1 min-h-0">
+                {chatListContent}
+              </ScrollArea>
+
+              {/* Logout Button */}
+              <div className="px-4 py-3 border-t border-sidebar-border shrink-0">
+                <Button
+                  onClick={() => logout()}
+                  variant="ghost"
+                  className="w-full gap-2 text-sidebar-foreground hover:bg-sidebar-accent h-10"
+                  size="sm"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}

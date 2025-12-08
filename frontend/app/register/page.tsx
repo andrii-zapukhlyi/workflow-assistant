@@ -1,7 +1,7 @@
 import { RegisterForm } from "@/components/register-form"
 
 export const metadata = {
-  title: "Register | ChatBot",
+  title: "Workflow Assistant",
   description: "Create a new chatbot account",
 }
 

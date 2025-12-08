@@ -36,6 +36,8 @@ class ChatHistory(Base):
     session_id = Column(Integer, ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False)
     role = Column(String, nullable=False)
     content = Column(Text, nullable=False)
+    source_links = Column(JSON, nullable=True)
+    source_titles = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
     session = relationship("ChatSession", back_populates="messages")

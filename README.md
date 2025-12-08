@@ -1,1 +1,1 @@
-# rag-workflow-assistant
+# workflow-assistant

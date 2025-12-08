@@ -71,12 +71,8 @@ export const authService = {
       }
 
       const errorText = await response.text()
-      try {
-        const errorData = JSON.parse(errorText)
-        throw new Error(errorData.detail || errorData.message || `API error: ${response.status}`)
-      } catch (e) {
-        throw new Error(`Incorrect email or password`)
-      }
+      const errorData = JSON.parse(errorText)
+      throw new Error(errorData.detail)
     }
 
     return response.json()
@@ -161,4 +157,6 @@ export interface Message {
   role: "user" | "assistant"
   content: string
   created_at: string
+  links?: string[] // Retrieved document links for assistant messages
+  titles?: string[] // Retrieved document titles for assistant messages
 }

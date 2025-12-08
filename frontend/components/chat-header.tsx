@@ -16,12 +16,9 @@ export function ChatHeader({ currentChatTitle = "New Chat", onLogout }: ChatHead
   if (!user) return null
 
   return (
-    <div className="border-b border-border bg-card px-6 py-4">
+    <div className="border-b border-border bg-card px-6 py-4 shrink-0">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">{currentChatTitle}</h1>
-          <p className="text-sm text-muted-foreground">Chat with AI Assistant</p>
-        </div>
+        <h1 className="text-lg font-semibold text-foreground">Workflow Assistant</h1>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

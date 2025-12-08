@@ -96,15 +96,19 @@ def load_chat_history(session: ChatSession) -> List[BaseMessage]:
     return messages
 
 
-def save_messages(db: Session, session: ChatSession, messages: List[BaseMessage]):
-    for msg in messages:
+def save_messages(db: Session, session: ChatSession, messages: List[BaseMessage], source_links: List[str] | None = None, source_titles: List[str] | None = None):
+    for i, msg in enumerate(messages):
         if isinstance(msg, HumanMessage):
             role = "user"
+            msg_links = None
+            msg_titles = None
         elif isinstance(msg, AIMessage):
             role = "assistant"
+            msg_links = source_links if i == len(messages) - 1 else None
+            msg_titles = source_titles if i == len(messages) - 1 else None
         else:
             continue
-        db_msg = ChatHistory(session_id=session.id, role=role, content=msg.content)
+        db_msg = ChatHistory(session_id=session.id, role=role, content=msg.content, source_links=msg_links, source_titles=msg_titles)
         db.add(db_msg)
     session.last_active = datetime.datetime.now(datetime.timezone.utc)
     db.commit()

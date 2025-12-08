@@ -18,6 +18,7 @@ interface AuthContextType {
         positionLevel: string,
     ) => Promise<void>
     logout: () => Promise<void>
+    setError: (error: string | null) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -112,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [router])
 
     return (
-        <AuthContext.Provider value={{ user, loading, error, login, register, logout }}>
+        <AuthContext.Provider value={{ user, loading, error, login, register, logout, setError }}>
             {children}
         </AuthContext.Provider>
     )

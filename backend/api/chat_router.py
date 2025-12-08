@@ -81,6 +81,8 @@ async def get_chat_messages(session_id: int, current_user=Depends(get_current_us
             "chat_id": session.id,
             "role": m.role,
             "content": m.content,
+            "links": m.source_links if m.source_links else [],
+            "titles": m.source_titles if m.source_titles else [],
             "created_at": m.created_at.isoformat()
         }
         for m in session.messages
@@ -94,7 +96,7 @@ async def ask_in_chat(session_id: int, req: AskRequest, db: Session = Depends(ge
         raise HTTPException(403, "Access denied to this chat session")
 
     try:
-        answer, links = handle_user_query(session_id, req.query, current_user.department, db)
+        answer, links, titles = handle_user_query(session_id, req.query, current_user.department, db)
     except Exception as e:
         msg = str(e)
         if "rate_limit_exceeded" in msg or "429" in msg:
@@ -105,4 +107,4 @@ async def ask_in_chat(session_id: int, req: AskRequest, db: Session = Depends(ge
         session.name = generate_session_name(req.query)
         db.commit()
 
-    return {"answer": answer, "links": links, "session_name": session.name}
+    return {"answer": answer, "links": links, "titles": titles, "session_name": session.name}

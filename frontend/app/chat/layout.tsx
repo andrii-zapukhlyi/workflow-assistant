@@ -2,7 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Chat | ChatBot",
+  title: "Workflow Assistant",
   description: "Multi-chat chatbot interface",
 }
 

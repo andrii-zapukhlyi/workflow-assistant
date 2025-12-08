@@ -19,11 +19,17 @@ export function ChatContainer() {
   const [isLoading, setIsLoading] = useState(false) // For fetching history
   const [isGenerating, setIsGenerating] = useState(false) // For generating new answer
   const sidebarRef = useRef<SidebarRef>(null)
+  const isCreatingChatRef = useRef(false)
   const { logout } = useAuth()
 
   useEffect(() => {
     if (currentChatId) {
-      loadMessages(currentChatId)
+      if (isCreatingChatRef.current) {
+        isCreatingChatRef.current = false
+        setIsLoading(false)
+      } else {
+        loadMessages(currentChatId)
+      }
     } else {
       setMessages([])
       setIsLoading(false)
@@ -73,8 +79,8 @@ export function ChatContainer() {
       if (!activeChatId) {
         const newChat = await chatApi.createChat(content.slice(0, 30) + "...")
         activeChatId = newChat.id
+        isCreatingChatRef.current = true
         setCurrentChatId(activeChatId)
-        sidebarRef.current?.refreshChats()
       }
 
       const response = await chatApi.sendMessage(activeChatId, content)
@@ -84,7 +90,9 @@ export function ChatContainer() {
         chat_id: activeChatId,
         role: "assistant",
         content: response.answer,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        links: response.links && response.links.length > 0 ? response.links : undefined,
+        titles: response.titles && response.titles.length > 0 ? response.titles : undefined
       }
 
       setMessages(prev => [...prev, assistantMessage])
@@ -92,8 +100,10 @@ export function ChatContainer() {
       // Update chat title if provided
       if (response.session_name) {
         setCurrentChatTitle(response.session_name)
-        sidebarRef.current?.updateChatTitle(activeChatId, response.session_name)
       }
+
+      // Refresh sidebar to update chat list order (backend sorts by last activity)
+      sidebarRef.current?.refreshChats()
 
     } catch (error) {
       console.error("Failed to send message:", error)
@@ -105,17 +115,18 @@ export function ChatContainer() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
       <Sidebar
         ref={sidebarRef}
         currentChatId={currentChatId || undefined}
         onChatSelect={handleChatSelect}
         onNewChat={handleNewChat}
+        isGenerating={isGenerating}
       />
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col md:ml-0 relative">
+      <div className="flex-1 flex flex-col min-h-0 md:ml-0 relative overflow-hidden">
         {/* Chat Header with Account Info */}
         <ChatHeader currentChatTitle={currentChatTitle} onLogout={logout} />
 

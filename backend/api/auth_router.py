@@ -36,7 +36,7 @@ def issue_refresh_token(db: Session, user_id: int):
     hashed = hash_refresh_token(token_value)
     expires = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     token_db = create_refresh_token(db, user_id, hashed, expires)
-    return token_db
+    return token_value, token_db
 
 def generate_skills_for_position(position: str, position_level: str) -> list[str]:
     llm = ChatGroq(
@@ -93,12 +93,12 @@ async def register_user(payload: RegisterUser, db: Session = Depends(get_db)):
 
     employee = create_employee(db, payload.full_name, email, password, position_obj.id, department)
     access_token = create_access_token({"sub": employee.email})
-    refresh_token_db = issue_refresh_token(db, employee.id)
+    raw_refresh_token, _ = issue_refresh_token(db, employee.id)
 
     response = JSONResponse({"access_token": access_token, "token_type": "bearer"})
     response.set_cookie(
         key="refresh_token",
-        value=refresh_token_db.token,
+        value=raw_refresh_token,
         httponly=True,
         secure=not IS_DEVELOPMENT,  # False for HTTP (dev), True for HTTPS (prod)
         samesite="lax" if IS_DEVELOPMENT else "strict",
@@ -114,12 +114,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
     access_token = create_access_token({"sub": employee.email})
-    refresh_token_db = issue_refresh_token(db, employee.id)
+    raw_refresh_token, _ = issue_refresh_token(db, employee.id)
 
     response = JSONResponse({"access_token": access_token, "token_type": "bearer"})
     response.set_cookie(
         key="refresh_token",
-        value=refresh_token_db.token,
+        value=raw_refresh_token,
         httponly=True,
         secure=not IS_DEVELOPMENT,  # False for HTTP (dev), True for HTTPS (prod)
         samesite="lax" if IS_DEVELOPMENT else "strict",
@@ -149,12 +149,12 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
 
     employee = get_user_by_refresh_token(db, token_db)
     access_token = create_access_token({"sub": employee.email})
-    refresh_db = issue_refresh_token(db, employee.id)
+    raw_refresh_token, _ = issue_refresh_token(db, employee.id)
 
     response = JSONResponse({"access_token": access_token, "token_type": "bearer"})
     response.set_cookie(
         key="refresh_token",
-        value=refresh_db.token,
+        value=raw_refresh_token,
         httponly=True,
         secure=not IS_DEVELOPMENT,  # False for HTTP (dev), True for HTTPS (prod)
         samesite="lax" if IS_DEVELOPMENT else "strict",

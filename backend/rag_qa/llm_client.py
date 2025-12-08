@@ -52,7 +52,7 @@ def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
 def trim_history(chat_history, max_messages=3):
     return chat_history[-max_messages:]
 
-def run_qa_chain(user_message: str, space_key: str, chat_history: List[BaseMessage]) -> Tuple[str, List[str]]:
+def run_qa_chain(user_message: str, space_key: str, chat_history: List[BaseMessage]) -> Tuple[str, List[str], List[str]]:
     llm = ChatGroq(
         api_key=GROQ_API_KEY,
         model="llama-3.3-70b-versatile"
@@ -73,4 +73,6 @@ def run_qa_chain(user_message: str, space_key: str, chat_history: List[BaseMessa
     docs = result["context"]
     source_links = list(set([doc.metadata.get("page_link", "") for doc in docs]))
     source_links = [link for link in source_links if link]
-    return assistant_answer, source_links
+    source_titles = list(set([doc.metadata.get("page_title", "") for doc in docs]))
+    source_titles = [title for title in source_titles if title]
+    return assistant_answer, source_links, source_titles
