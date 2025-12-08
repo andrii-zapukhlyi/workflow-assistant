@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 import datetime
 from typing import List
 from langchain_groq import ChatGroq
-from config.settings import GROQ_API_KEY
+from config.settings import GROQ_API_KEY, IS_DEVELOPMENT
 from langchain_core.output_parsers import PydanticOutputParser
 
 class RegisterUser(BaseModel):
@@ -67,7 +67,7 @@ def generate_skills_for_position(position: str, position_level: str) -> list[str
 
 
 @router.post("/register", response_model=Token)
-def register_user(payload: RegisterUser, db: Session = Depends(get_db)):
+async def register_user(payload: RegisterUser, db: Session = Depends(get_db)):
     email = payload.email.lower().strip()
     department = payload.department.upper().strip()
     position = payload.position.upper().strip()
@@ -100,15 +100,15 @@ def register_user(payload: RegisterUser, db: Session = Depends(get_db)):
         key="refresh_token",
         value=refresh_token_db.token,
         httponly=True,
-        secure=True,
-        samesite="strict",
+        secure=not IS_DEVELOPMENT,  # False for HTTP (dev), True for HTTPS (prod)
+        samesite="lax" if IS_DEVELOPMENT else "strict",
         max_age=60 * 60 * 24 * 30,
     )
     return response
 
 
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     employee = get_employee_by_email(db, form_data.username.lower().strip())
     if not employee or not verify_password(form_data.password, employee.password):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
@@ -121,15 +121,15 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         key="refresh_token",
         value=refresh_token_db.token,
         httponly=True,
-        secure=True,
-        samesite="strict",
+        secure=not IS_DEVELOPMENT,  # False for HTTP (dev), True for HTTPS (prod)
+        samesite="lax" if IS_DEVELOPMENT else "strict",
         max_age=60 * 60 * 24 * 30,
     )
     return response
 
 
 @router.post("/refresh", response_model=Token)
-def refresh_token(request: Request, db: Session = Depends(get_db)):
+async def refresh_token(request: Request, db: Session = Depends(get_db)):
     token_cookie = request.cookies.get("refresh_token")
     if not token_cookie:
         raise HTTPException(status_code=401, detail="Refresh token missing")
@@ -156,15 +156,15 @@ def refresh_token(request: Request, db: Session = Depends(get_db)):
         key="refresh_token",
         value=refresh_db.token,
         httponly=True,
-        secure=True,
-        samesite="strict",
+        secure=not IS_DEVELOPMENT,  # False for HTTP (dev), True for HTTPS (prod)
+        samesite="lax" if IS_DEVELOPMENT else "strict",
         max_age=60 * 60 * 24 * 30
     )
     return response
 
 
 @router.post("/logout")
-def logout(request: Request, db: Session = Depends(get_db)):
+async def logout(request: Request, db: Session = Depends(get_db)):
     token_cookie = request.cookies.get("refresh_token")
     if token_cookie:
         delete_refresh_token(db, hash_refresh_token(token_cookie))
@@ -175,7 +175,7 @@ def logout(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/me")
-def get_current_user_info(current_user=Depends(get_current_user)):
+async def get_current_user_info(current_user=Depends(get_current_user)):
     return {
         "id": current_user.id,
         "full_name": current_user.full_name,

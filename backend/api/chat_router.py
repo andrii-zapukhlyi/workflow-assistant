@@ -41,13 +41,13 @@ def generate_session_name(first_message: str) -> str:
 
 
 @router.post("/chats")
-def create_chat(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def create_chat(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     session = create_session(db, current_user.id, None)
     return {"session_id": session.id, "name": None}
 
 
 @router.delete("/chats/{session_id}")
-def delete_chat(session_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def delete_chat(session_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
@@ -56,7 +56,7 @@ def delete_chat(session_id: int, current_user=Depends(get_current_user), db: Ses
 
 
 @router.put("/chats/{session_id}/rename")
-def rename_chat(session_id: int, req: RenameChatRequest, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def rename_chat(session_id: int, req: RenameChatRequest, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
@@ -65,13 +65,13 @@ def rename_chat(session_id: int, req: RenameChatRequest, current_user=Depends(ge
 
 
 @router.get("/chats")
-def list_chats(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_chats(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     sessions = get_sessions_for_user(db, current_user.id)
     return [{"id": s.id, "name": s.name} for s in sessions]
 
 
 @router.get("/chats/{session_id}/messages")
-def get_chat_messages(session_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_chat_messages(session_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
@@ -88,7 +88,7 @@ def get_chat_messages(session_id: int, current_user=Depends(get_current_user), d
 
 
 @router.post("/chats/{session_id}/ask")
-def ask_in_chat(session_id: int, req: AskRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+async def ask_in_chat(session_id: int, req: AskRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
