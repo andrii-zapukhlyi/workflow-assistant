@@ -125,7 +125,7 @@ export const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ currentChat
                 <Input
                   value={editingTitle}
                   onChange={(e) => setEditingTitle(e.target.value)}
-                  className="h-7 text-xs"
+                  className="h-7 text-xs text-foreground"
                   autoFocus
                 />
                 <Button
@@ -153,7 +153,11 @@ export const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ currentChat
               </div>
             ) : (
               <>
-                <span className="flex-1 truncate">{chat.title}</span>
+                <span className="flex-1 truncate">
+                  {chat.title && chat.title.length > 30
+                    ? `${chat.title.substring(0, 30)}...`
+                    : chat.title}
+                </span>
                 <Button
                   size="icon"
                   variant="ghost"

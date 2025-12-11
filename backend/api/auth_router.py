@@ -141,7 +141,10 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Invalid refresh token")
 
     now = datetime.datetime.now(datetime.timezone.utc)
-    if token_db.expires_at < now:
+    expires_at = token_db.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
+    if expires_at < now:
         delete_refresh_token(db, hashed_cookie)
         raise HTTPException(status_code=403, detail="Refresh token expired")
 

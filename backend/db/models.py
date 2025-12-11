@@ -48,7 +48,7 @@ class RefreshToken(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"))
     token = Column(String(255), unique=True, index=True)
-    expires_at = Column(DateTime)
+    expires_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
     user = relationship("Employee", back_populates="refresh_tokens")
