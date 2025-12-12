@@ -1,8 +1,8 @@
 __pycache__/
 .idea/
 .env
+backend/.env
 .DS_Store
-.gradio/
 
 frontend/node_modules/
 frontend/.next/
