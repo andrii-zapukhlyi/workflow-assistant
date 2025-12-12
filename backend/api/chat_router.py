@@ -75,6 +75,7 @@ async def get_chat_messages(session_id: int, current_user=Depends(get_current_us
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
+    messages = sorted(session.messages, key=lambda m: m.id)
     return [
         {
             "id": m.id,
@@ -85,7 +86,7 @@ async def get_chat_messages(session_id: int, current_user=Depends(get_current_us
             "titles": m.source_titles if m.source_titles else [],
             "created_at": m.created_at.isoformat()
         }
-        for m in session.messages
+        for m in messages
     ]
 
 

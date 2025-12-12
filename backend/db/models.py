@@ -23,11 +23,11 @@ class ChatSession(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, default=None, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
-    last_active = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    last_active = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     user = relationship("Employee", back_populates="sessions")
-    messages = relationship("ChatHistory", back_populates="session", cascade="all, delete-orphan")
+    messages = relationship("ChatHistory", back_populates="session", cascade="all, delete-orphan", order_by="ChatHistory.id")
 
 class ChatHistory(Base):
     __tablename__ = "chat_history"
@@ -38,7 +38,7 @@ class ChatHistory(Base):
     content = Column(Text, nullable=False)
     source_links = Column(JSON, nullable=True)
     source_titles = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     session = relationship("ChatSession", back_populates="messages")
 
@@ -49,7 +49,7 @@ class RefreshToken(Base):
     user_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"))
     token = Column(String(255), unique=True, index=True)
     expires_at = Column(DateTime(timezone=True))
-    created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     user = relationship("Employee", back_populates="refresh_tokens")
 

@@ -88,7 +88,8 @@ def ensure_session_ownership(db: Session, session_id: int, user_id: int) -> Chat
 
 def load_chat_history(session: ChatSession) -> List[BaseMessage]:
     messages = []
-    for msg in session.messages:
+    sorted_msgs = sorted(session.messages, key=lambda m: m.id)
+    for msg in sorted_msgs:
         if msg.role == "user":
             messages.append(HumanMessage(content=msg.content))
         else:
