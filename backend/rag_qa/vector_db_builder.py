@@ -1,15 +1,9 @@
 from langchain_qdrant import QdrantVectorStore
 from langchain_huggingface.embeddings import HuggingFaceEndpointEmbeddings
 from langchain_core.documents import Document
-from chunker import chunk_and_prepare_metadata
-from confluence_client import get_all_pages
+from rag_qa.chunker import chunk_and_prepare_metadata
+from rag_qa.confluence_client import get_all_pages
 from config.settings import HF_API_TOKEN
-from qdrant_client import QdrantClient
-
-def delete_old_vector_db(url: str, collection: str) -> None:
-    client = QdrantClient(url=url)
-    if client.collection_exists(collection):
-        client.delete_collection(collection_name=collection)
 
 def build_vector_db(url: str, collection: str) -> None:
     embedding = HuggingFaceEndpointEmbeddings(
@@ -29,12 +23,3 @@ def build_vector_db(url: str, collection: str) -> None:
         url=url,
         collection_name=collection,
     )
-
-def main() -> None:
-    collection_name = "confluence_docs"
-    qdrant_url = "http://localhost:6333"
-    delete_old_vector_db(url=qdrant_url, collection=collection_name)
-    build_vector_db(url=qdrant_url, collection=collection_name)
-
-if __name__ == "__main__":
-    main()

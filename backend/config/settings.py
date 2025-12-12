@@ -1,19 +1,21 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+if "APP_ENV" not in os.environ:
+    load_dotenv()
 
-CONFLUENCE_DOMAIN = os.getenv("CONFLUENCE_DOMAIN")
-CONFLUENCE_USERNAME = os.getenv("CONFLUENCE_USERNAME")
-CONFLUENCE_API_TOKEN = os.getenv("CONFLUENCE_API_TOKEN")
+APP_ENV = os.environ.get("APP_ENV", "development")
+IS_DEVELOPMENT = APP_ENV.lower() == "development"
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+CONFLUENCE_DOMAIN = os.environ.get("CONFLUENCE_DOMAIN")
+CONFLUENCE_USERNAME = os.environ.get("CONFLUENCE_USERNAME")
+CONFLUENCE_API_TOKEN = os.environ.get("CONFLUENCE_API_TOKEN")
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-HF_API_TOKEN = os.getenv("HF_API_TOKEN")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-JWT_SECRET_KEY= os.getenv("JWT_SECRET_KEY")
-JWT_ALGORITHM= os.getenv("JWT_ALGORITHM")
-JWT_EXPIRATION_MINUTES=int(os.getenv("JWT_EXPIRATION_MINUTES"))
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+HF_API_TOKEN = os.environ.get("HF_API_TOKEN")
 
-IS_DEVELOPMENT = os.getenv("IS_DEVELOPMENT", "true").lower() == "true"
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM")
+JWT_EXPIRATION_MINUTES = int(os.environ.get("JWT_EXPIRATION_MINUTES", 30))
