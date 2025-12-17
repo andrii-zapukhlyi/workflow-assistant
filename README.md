@@ -1,1 +1,1 @@
-# workflow-assistant
+# Multi-agent Workflow Assistant

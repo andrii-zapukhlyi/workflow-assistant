@@ -6,7 +6,8 @@ export const authService = {
   setToken: (token: string) => {
     if (typeof window !== "undefined") {
       localStorage.setItem(TOKEN_KEY, token)
-      document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Strict; Secure`
+      const secureFlag = window.location.protocol === 'https:' ? 'Secure;' : '';
+      document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Strict; ${secureFlag}`
     }
   },
 
@@ -46,7 +47,11 @@ export const authService = {
       headers["Authorization"] = `Bearer ${token}`
     }
 
-    const response = await fetch(`http://localhost:8000${endpoint}`, {
+    const baseUrl = typeof window !== 'undefined'
+      ? '/api'
+      : (process.env.INTERNAL_API_URL || 'http://localhost:8000');
+
+    const response = await fetch(`${baseUrl}${endpoint}`, {
       method,
       headers,
       body: body instanceof URLSearchParams ? body : body ? JSON.stringify(body) : undefined,
