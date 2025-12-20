@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 
 if "APP_ENV" not in os.environ:

@@ -1,8 +1,10 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON
 import datetime
+
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
+
 
 class Employee(Base):
     __tablename__ = "employees"
@@ -11,36 +13,56 @@ class Employee(Base):
     email = Column(Text, unique=True, nullable=False)
     password = Column(Text, nullable=False)
     department = Column(Text, nullable=False)
-    position_id = Column(Integer, ForeignKey("positions_skills.id", ondelete="SET NULL"), nullable=True)
+    position_id = Column(
+        Integer, ForeignKey("positions_skills.id", ondelete="SET NULL"), nullable=True
+    )
 
     position_obj = relationship("PositionsSkills", back_populates="employees")
     sessions = relationship("ChatSession", back_populates="user")
     refresh_tokens = relationship("RefreshToken", back_populates="user")
 
+
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("employees.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String, default=None, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
-    last_active = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    created_at = Column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+    last_active = Column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
 
     user = relationship("Employee", back_populates="sessions")
-    messages = relationship("ChatHistory", back_populates="session", cascade="all, delete-orphan", order_by="ChatHistory.id")
+    messages = relationship(
+        "ChatHistory",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="ChatHistory.id",
+    )
+
 
 class ChatHistory(Base):
     __tablename__ = "chat_history"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    session_id = Column(Integer, ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False)
+    session_id = Column(
+        Integer, ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False
+    )
     role = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     source_links = Column(JSON, nullable=True)
     source_titles = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    created_at = Column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
 
     session = relationship("ChatSession", back_populates="messages")
+
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
@@ -49,9 +71,12 @@ class RefreshToken(Base):
     user_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"))
     token = Column(String(255), unique=True, index=True)
     expires_at = Column(DateTime(timezone=True))
-    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    created_at = Column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
 
     user = relationship("Employee", back_populates="refresh_tokens")
+
 
 class PositionsSkills(Base):
     __tablename__ = "positions_skills"

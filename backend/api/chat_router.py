@@ -1,15 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from db.crud import create_session, delete_session, rename_session, get_sessions_for_user, ensure_session_ownership
-from agents.qa_agent import handle_user_query
-from db.db_auth import get_db
-from auth.auth import get_current_user
-from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
-from config.settings import GROQ_API_KEY
+from langchain_groq import ChatGroq
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from agents.qa_agent import handle_user_query
+from auth.auth import get_current_user
+from config.settings import GROQ_API_KEY
+from db.crud import (
+    create_session,
+    delete_session,
+    ensure_session_ownership,
+    get_sessions_for_user,
+    rename_session,
+)
+from db.db_auth import get_db
 
 router = APIRouter()
+
 
 class RenameChatRequest(BaseModel):
     new_name: str
@@ -18,18 +26,20 @@ class RenameChatRequest(BaseModel):
 class AskRequest(BaseModel):
     query: str
 
-def generate_session_name(first_message: str) -> str:
-    llm = ChatGroq(
-        api_key=GROQ_API_KEY,
-        model="llama-3.3-70b-versatile"
-    )
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system",
-         "Generate a short title (max 5 words) summarizing the user's message. "
-         "Do NOT add new information. Keep it concise, neutral, and lowercase."),
-        ("user", first_message)
-    ])
+def generate_session_name(first_message: str) -> str:
+    llm = ChatGroq(api_key=GROQ_API_KEY, model="llama-3.3-70b-versatile")
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "Generate a short title (max 5 words) summarizing the user's message. "
+                "Do NOT add new information. Keep it concise, neutral, and lowercase.",
+            ),
+            ("user", first_message),
+        ]
+    )
 
     response = llm.invoke(prompt.format_messages())
     title = response.content.strip()
@@ -41,13 +51,19 @@ def generate_session_name(first_message: str) -> str:
 
 
 @router.post("/chats")
-async def create_chat(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def create_chat(
+    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+):
     session = create_session(db, current_user.id, None)
     return {"session_id": session.id, "name": None}
 
 
 @router.delete("/chats/{session_id}")
-async def delete_chat(session_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def delete_chat(
+    session_id: int,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
@@ -56,7 +72,12 @@ async def delete_chat(session_id: int, current_user=Depends(get_current_user), d
 
 
 @router.put("/chats/{session_id}/rename")
-async def rename_chat(session_id: int, req: RenameChatRequest, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def rename_chat(
+    session_id: int,
+    req: RenameChatRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
@@ -65,13 +86,19 @@ async def rename_chat(session_id: int, req: RenameChatRequest, current_user=Depe
 
 
 @router.get("/chats")
-async def list_chats(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_chats(
+    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+):
     sessions = get_sessions_for_user(db, current_user.id)
     return [{"id": s.id, "name": s.name} for s in sessions]
 
 
 @router.get("/chats/{session_id}/messages")
-async def get_chat_messages(session_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_chat_messages(
+    session_id: int,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
@@ -84,20 +111,27 @@ async def get_chat_messages(session_id: int, current_user=Depends(get_current_us
             "content": m.content,
             "links": m.source_links if m.source_links else [],
             "titles": m.source_titles if m.source_titles else [],
-            "created_at": m.created_at.isoformat()
+            "created_at": m.created_at.isoformat(),
         }
         for m in messages
     ]
 
 
 @router.post("/chats/{session_id}/ask")
-async def ask_in_chat(session_id: int, req: AskRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+async def ask_in_chat(
+    session_id: int,
+    req: AskRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     session = ensure_session_ownership(db, session_id, current_user.id)
     if not session:
         raise HTTPException(403, "Access denied to this chat session")
 
     try:
-        answer, links, titles = handle_user_query(session_id, req.query, current_user.department, db)
+        answer, links, titles = handle_user_query(
+            session_id, req.query, current_user.department, db
+        )
     except Exception as e:
         msg = str(e)
         if "rate_limit_exceeded" in msg or "429" in msg:
@@ -108,4 +142,9 @@ async def ask_in_chat(session_id: int, req: AskRequest, db: Session = Depends(ge
         session.name = generate_session_name(req.query)
         db.commit()
 
-    return {"answer": answer, "links": links, "titles": titles, "session_name": session.name}
+    return {
+        "answer": answer,
+        "links": links,
+        "titles": titles,
+        "session_name": session.name,
+    }

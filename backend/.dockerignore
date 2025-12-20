@@ -27,3 +27,4 @@ docker-compose.override.yml
 data/
 models/
 cache/
+tests/

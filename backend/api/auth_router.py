@@ -1,17 +1,36 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-from db.db_auth import get_db
-from db.crud import get_employee_by_email, create_employee, create_refresh_token, get_refresh_token, get_user_by_refresh_token, delete_refresh_token, get_current_positions_levels, get_position_by_name_level, create_position_skill
-from auth.auth import verify_password, create_access_token, hash_password, hash_refresh_token, get_current_user
-from pydantic import BaseModel
-import uuid
-from fastapi.responses import JSONResponse
 import datetime
+import uuid
 from typing import List
-from langchain_groq import ChatGroq
-from config.settings import GROQ_API_KEY, IS_DEVELOPMENT
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from langchain_core.output_parsers import PydanticOutputParser
+from langchain_groq import ChatGroq
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from auth.auth import (
+    create_access_token,
+    get_current_user,
+    hash_password,
+    hash_refresh_token,
+    verify_password,
+)
+from config.settings import GROQ_API_KEY, IS_DEVELOPMENT
+from db.crud import (
+    create_employee,
+    create_position_skill,
+    create_refresh_token,
+    delete_refresh_token,
+    get_current_positions_levels,
+    get_employee_by_email,
+    get_position_by_name_level,
+    get_refresh_token,
+    get_user_by_refresh_token,
+)
+from db.db_auth import get_db
+
 
 class RegisterUser(BaseModel):
     full_name: str
@@ -21,12 +40,15 @@ class RegisterUser(BaseModel):
     department: str
     position_level: str
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+
 class PositionSkillsExtraction(BaseModel):
     skills: List[str]
+
 
 router = APIRouter(tags=["auth"])
 
@@ -38,21 +60,18 @@ def issue_refresh_token(db: Session, user_id: int):
     token_db = create_refresh_token(db, user_id, hashed, expires)
     return token_value, token_db
 
+
 def generate_skills_for_position(position: str, position_level: str) -> list[str]:
-    llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
-        api_key=GROQ_API_KEY
-    )
+    llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=GROQ_API_KEY)
 
     prompt = (
         f"Generate a JSON list of hard skills for the position '{position}' at level '{position_level}'. "
         "Include skills from lower levels for senior roles. "
         "Focus ON tools, technologies, programming languages, frameworks, NOT on domain knowledge or soft skills (e.g. google meet is better than video conferencing). "
         "Limit: Intern=5 skills, Junior=7, Middle=10, Senior/Team Lead=15. "
-        "Return JSON exactly like this: {\"skills\": [\"skill1\", \"skill2\"]}. "
+        'Return JSON exactly like this: {"skills": ["skill1", "skill2"]}. '
         "Do NOT include explanations, markdown, or anything else."
     )
-
 
     parser = PydanticOutputParser(pydantic_object=PositionSkillsExtraction)
 
@@ -91,7 +110,9 @@ async def register_user(payload: RegisterUser, db: Session = Depends(get_db)):
     else:
         position_obj = get_position_by_name_level(db, position, position_level)
 
-    employee = create_employee(db, payload.full_name, email, password, position_obj.id, department)
+    employee = create_employee(
+        db, payload.full_name, email, password, position_obj.id, department
+    )
     access_token = create_access_token({"sub": employee.email})
     raw_refresh_token, _ = issue_refresh_token(db, employee.id)
 
@@ -108,7 +129,9 @@ async def register_user(payload: RegisterUser, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+):
     employee = get_employee_by_email(db, form_data.username.lower().strip())
     if not employee or not verify_password(form_data.password, employee.password):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
@@ -161,7 +184,7 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
         httponly=True,
         secure=not IS_DEVELOPMENT,  # False for HTTP (dev), True for HTTPS (prod)
         samesite="lax" if IS_DEVELOPMENT else "strict",
-        max_age=60 * 60 * 24 * 30
+        max_age=60 * 60 * 24 * 30,
     )
     return response
 
@@ -185,5 +208,5 @@ async def get_current_user_info(current_user=Depends(get_current_user)):
         "email": current_user.email,
         "department": current_user.department,
         "position": current_user.position_obj.position,
-        "position_level": current_user.position_obj.position_level
+        "position_level": current_user.position_obj.position_level,
     }

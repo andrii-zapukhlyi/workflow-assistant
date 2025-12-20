@@ -1,12 +1,17 @@
 from typing import Any, List, Tuple
-from langchain_classic.chains.history_aware_retriever import create_history_aware_retriever
+
 from langchain_classic.chains import create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
+from langchain_classic.chains.history_aware_retriever import (
+    create_history_aware_retriever,
+)
 from langchain_core.messages import BaseMessage
-from rag_qa.retriever import get_retriever
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
+
 from config.settings import GROQ_API_KEY
+from rag_qa.retriever import get_retriever
+
 
 def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
     rephrase_system = (
@@ -23,11 +28,7 @@ def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
             ("user", "{input}"),
         ]
     )
-    history_retriever = create_history_aware_retriever(
-        llm,
-        retriever,
-        rephrase_prompt
-    )
+    history_retriever = create_history_aware_retriever(llm, retriever, rephrase_prompt)
 
     qa_system = (
         "You are an expert assistant for Confluence documentation. "
@@ -51,14 +52,15 @@ def build_qa_chain(llm: ChatGroq, retriever: Any) -> Any:
 
     return retrieval_chain
 
+
 def trim_history(chat_history, max_messages=3):
     return chat_history[-max_messages:]
 
-def run_qa_chain(user_message: str, space_key: str, chat_history: List[BaseMessage]) -> Tuple[str, List[str], List[str]]:
-    llm = ChatGroq(
-        api_key=GROQ_API_KEY,
-        model="llama-3.3-70b-versatile"
-    )
+
+def run_qa_chain(
+    user_message: str, space_key: str, chat_history: List[BaseMessage]
+) -> Tuple[str, List[str], List[str]]:
+    llm = ChatGroq(api_key=GROQ_API_KEY, model="llama-3.3-70b-versatile")
 
     chat_history = trim_history(chat_history, max_messages=3)
     retriever = get_retriever(space_key, k=2)
