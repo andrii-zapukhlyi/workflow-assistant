@@ -1,6 +1,10 @@
 import os
 import sys
 
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ["JWT_SECRET_KEY"] = "testsecret"
+os.environ["JWT_ALGORITHM"] = "HS256"
+
 from fastapi.testclient import TestClient
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
