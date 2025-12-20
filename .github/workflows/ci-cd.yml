@@ -92,10 +92,11 @@ jobs:
         key: ${{ secrets.VM_SSH_KEY }}
         script: |
           docker login ${{ secrets.REGISTRY_LOGIN_SERVER }} -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }}
+
+          docker compose -f docker-compose.prod.yml down
+          docker system prune -a -f
           
           docker pull ${{ env.IMAGE_BACKEND }}:latest
           docker pull ${{ env.IMAGE_FRONTEND }}:latest
           
-          docker compose -f docker-compose.prod.yml up -d --force-recreate backend frontend
-          
-          docker image prune -f
+          docker compose -f docker-compose.prod.yml up -d --force-recreate
