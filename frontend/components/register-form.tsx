@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 
 const DEPARTMENTS = ["ML", "DB", "HR", "WEB"]
-const POSITION_LEVELS = ["Intern", "Junior", "Senior", "Team Lead"]
+const POSITION_LEVELS = ["Intern", "Junior", "Middle", "Senior", "Team Lead"]
 
 export function RegisterForm() {
   const { register, loading, error, setError } = useAuth()
